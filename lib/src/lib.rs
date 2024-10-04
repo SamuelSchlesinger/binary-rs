@@ -427,3 +427,8 @@ impl Binary for G2Affine {
         Some((g2affine, bs))
     }
 }
+
+#[cfg(test)]
+mod test {
+    // TODO write a bunch of fuzzing tests
+}

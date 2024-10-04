@@ -184,7 +184,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                             v
                         };
                         let unparse_code = fields.unnamed.iter().zip(field_idents.iter()).map(
-                            |(field, field_ident)| {
+                            |(_field, field_ident)| {
                                 quote! {
                                     #field_ident.unparse(bs);
                                 }
