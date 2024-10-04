@@ -4,6 +4,14 @@
 
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque};
 
+/// To derive on structs automatically.
+#[cfg(feature = "derive")]
+pub mod derive {
+    /// A derive macro which currently works on structs and unit types. It would be a really good idea to improve
+    /// it to work on enums as well.
+    pub use binary_derive::Binary;
+}
+
 /// Types which can be serialized and deserialized into a binary format.
 pub trait Binary: Sized {
     /// Deserialize self from bytes, potentially leaving more input.
