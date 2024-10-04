@@ -1,5 +1,10 @@
+//! # Binary
+//!
+//! A simple binary encoding and decoding library.
+
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque};
 
+/// Types which can be serialized and deserialized into a binary format.
 pub trait Binary: Sized {
     /// Deserialize self from bytes, potentially leaving more input.
     fn parse(bs: &[u8]) -> Option<(Self, &[u8])>;
@@ -22,7 +27,8 @@ pub trait Binary: Sized {
     }
 }
 
-/// Parse the given number of bytes into a fixed length array.
+/// Parse the given number of bytes into a fixed length array. This can be helpful for writing
+/// implementations of Binary.
 pub fn parse_bytes<const N: usize>(bs: &[u8]) -> Option<(&[u8; N], &[u8])> {
     if bs.len() >= N {
         Some((
