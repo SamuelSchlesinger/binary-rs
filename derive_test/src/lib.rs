@@ -9,3 +9,10 @@ struct Example {
 
 #[derive(derive::Binary)]
 struct Other(u128, i64);
+
+#[derive(derive::Binary)]
+enum WhatsIt {
+    GoesEr(u128, u64),
+    Pozer { x: f32, y: f64, z: i32 },
+    Whaner,
+}
