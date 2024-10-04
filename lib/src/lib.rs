@@ -388,7 +388,7 @@ impl<Key: Binary> Binary for LinkedList<Key> {
 }
 
 #[cfg(feature = "bls12_381")]
-use bls12_381::{G1Affine, G2Affine, Scalar};
+use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
 
 #[cfg(feature = "bls12_381")]
 impl Binary for Scalar {
@@ -417,6 +417,20 @@ impl Binary for G1Affine {
 }
 
 #[cfg(feature = "bls12_381")]
+impl Binary for G1Projective {
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        bs.extend_from_slice(&G1Affine::from(self).to_compressed());
+    }
+
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (g1affine_bytes, bs) = parse_bytes::<48>(bs)?;
+        let g1projective = Option::from(G1Affine::from_compressed(g1affine_bytes))
+            .map(|x: G1Affine| G1Projective::from(x))?;
+        Some((g1projective, bs))
+    }
+}
+
+#[cfg(feature = "bls12_381")]
 impl Binary for G2Affine {
     fn unparse(&self, bs: &mut Vec<u8>) {
         bs.extend_from_slice(&self.to_compressed());
@@ -426,6 +440,20 @@ impl Binary for G2Affine {
         let (g2affine_bytes, bs) = parse_bytes::<96>(bs)?;
         let g2affine = Option::from(G2Affine::from_compressed(g2affine_bytes))?;
         Some((g2affine, bs))
+    }
+}
+
+#[cfg(feature = "bls12_381")]
+impl Binary for G2Projective {
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        bs.extend_from_slice(&G2Affine::from(self).to_compressed());
+    }
+
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (g2affine_bytes, bs) = parse_bytes::<96>(bs)?;
+        let g2projective = Option::from(G2Affine::from_compressed(g2affine_bytes))
+            .map(|x: G2Affine| G2Projective::from(x))?;
+        Some((g2projective, bs))
     }
 }
 
