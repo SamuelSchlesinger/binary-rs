@@ -62,6 +62,7 @@ impl<A: Binary> Binary for Vec<A> {
     }
 
     fn unparse(&self, bs: &mut Vec<u8>) {
+        (self.len() as u64).unparse(bs);
         for a in self.iter() {
             a.unparse(bs);
         }
@@ -430,5 +431,311 @@ impl Binary for G2Affine {
 
 #[cfg(test)]
 mod test {
-    // TODO write a bunch of fuzzing tests
+    use super::{derive, parse_bytes, Binary};
+
+    use std::collections::{
+        BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque,
+    };
+
+    use rand::{
+        distributions::{Alphanumeric, Distribution, Standard},
+        thread_rng,
+    };
+
+    fn test_serialization<T>(samples: usize)
+    where
+        Standard: Distribution<T>,
+        T: Binary + PartialEq + std::fmt::Debug,
+    {
+        for _i in 0..samples {
+            let x = rand::random::<T>();
+            assert_eq!(x, T::from_bytes(&x.to_bytes()).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_primitives_binary() {
+        let samples = 10000;
+        test_serialization::<u8>(samples);
+        test_serialization::<u16>(samples);
+        test_serialization::<u32>(samples);
+        test_serialization::<u64>(samples);
+        test_serialization::<u128>(samples);
+        test_serialization::<i8>(samples);
+        test_serialization::<i16>(samples);
+        test_serialization::<i32>(samples);
+        test_serialization::<i64>(samples);
+        test_serialization::<i128>(samples);
+        test_serialization::<f32>(samples);
+        test_serialization::<f64>(samples);
+        test_serialization::<bool>(samples);
+        test_serialization::<char>(samples);
+    }
+
+    #[test]
+    fn test_string_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let s: String = Alphanumeric
+                .sample_iter(&mut rng)
+                .take(length)
+                .map(char::from)
+                .collect();
+            assert_eq!(s, String::from_bytes(&s.to_bytes()).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_vec_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let v: Vec<u8> = Standard.sample_iter(&mut rng).take(length).collect();
+            assert_eq!(v, <Vec<u8> as Binary>::from_bytes(&v.to_bytes()).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_heap_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let v: BinaryHeap<u8> = Standard.sample_iter(&mut rng).take(length).collect();
+            assert_eq!(
+                v.iter().collect::<Vec<_>>(),
+                <BinaryHeap<u8> as Binary>::from_bytes(&v.to_bytes())
+                    .unwrap()
+                    .iter()
+                    .collect::<Vec<_>>()
+            );
+        }
+    }
+
+    #[test]
+    fn test_btreeset_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let v: BTreeSet<i32> = Standard.sample_iter(&mut rng).take(length).collect();
+            assert_eq!(
+                v,
+                <BTreeSet<i32> as Binary>::from_bytes(&v.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_hashset_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let v: HashSet<i32> = Standard.sample_iter(&mut rng).take(length).collect();
+            assert_eq!(
+                v,
+                <HashSet<i32> as Binary>::from_bytes(&v.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_btreemap_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let keys: Vec<u64> = Standard.sample_iter(&mut rng).take(length).collect();
+            let v: BTreeMap<u64, u128> = keys
+                .iter()
+                .copied()
+                .zip(Standard.sample_iter(&mut rng))
+                .take(length)
+                .collect();
+            assert_eq!(
+                v,
+                <BTreeMap<u64, u128> as Binary>::from_bytes(&v.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_hashmap_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let keys: Vec<u64> = Standard.sample_iter(&mut rng).take(length).collect();
+            let v: HashMap<u64, u128> = keys
+                .iter()
+                .copied()
+                .zip(Standard.sample_iter(&mut rng))
+                .take(length)
+                .collect();
+            assert_eq!(
+                v,
+                <HashMap<u64, u128> as Binary>::from_bytes(&v.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_linkedlist_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let v: LinkedList<i32> = Standard.sample_iter(&mut rng).take(length).collect();
+            assert_eq!(
+                v,
+                <LinkedList<i32> as Binary>::from_bytes(&v.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_vecdeque_binary() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let length: usize = Standard.sample(&mut rng);
+            let length = length % 100;
+            let v: VecDeque<i32> = Standard.sample_iter(&mut rng).take(length).collect();
+            assert_eq!(
+                v,
+                <VecDeque<i32> as Binary>::from_bytes(&v.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    // TODO VecDeque
+
+    #[derive(derive::Binary, Debug, PartialEq)]
+    struct Example {
+        a: u128,
+        b: i64,
+        c: f32,
+    }
+
+    #[test]
+    fn test_custom_named_struct() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let example = Example {
+                a: Standard.sample(&mut rng),
+                b: Standard.sample(&mut rng),
+                c: Standard.sample(&mut rng),
+            };
+            assert_eq!(example, Example::from_bytes(&example.to_bytes()).unwrap());
+        }
+    }
+
+    #[derive(derive::Binary, Debug, PartialEq)]
+    struct Other(u128, i64);
+
+    #[test]
+    fn test_custom_unnamed_struct() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let other = Other(Standard.sample(&mut rng), Standard.sample(&mut rng));
+            assert_eq!(other, Other::from_bytes(&other.to_bytes()).unwrap());
+        }
+    }
+
+    #[derive(derive::Binary, Debug, PartialEq)]
+    enum WhatsIt {
+        GoesEr(u128, u64),
+        Pozer { x: f32, y: f64, z: i32 },
+        Whaner,
+    }
+
+    #[test]
+    fn test_custom_enum() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let choice: u8 = Standard.sample(&mut rng);
+            let choice = choice % 3;
+            let whatsit = if choice == 0 {
+                WhatsIt::GoesEr(Standard.sample(&mut rng), Standard.sample(&mut rng))
+            } else if choice == 1 {
+                WhatsIt::Pozer {
+                    x: Standard.sample(&mut rng),
+                    y: Standard.sample(&mut rng),
+                    z: Standard.sample(&mut rng),
+                }
+            } else {
+                WhatsIt::Whaner
+            };
+            assert_eq!(whatsit, WhatsIt::from_bytes(&whatsit.to_bytes()).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_parse_bytes() {
+        let bs = [1u8, 5, 3, 1, 2, 4, 5, 6];
+        assert!(parse_bytes::<9>(&bs).is_none());
+        assert!(parse_bytes::<8>(&bs).is_some());
+        assert!(parse_bytes::<7>(&bs).is_some());
+        assert!(parse_bytes::<6>(&bs).is_some());
+        assert!(parse_bytes::<5>(&bs).is_some());
+        assert!(parse_bytes::<4>(&bs).is_some());
+        assert!(parse_bytes::<3>(&bs).is_some());
+        assert!(parse_bytes::<2>(&bs).is_some());
+        assert!(parse_bytes::<1>(&bs).is_some());
+        assert!(parse_bytes::<0>(&bs).is_some());
+    }
+
+    #[cfg(feature = "bls12_381")]
+    #[test]
+    fn test_g1affine() {
+        use bls12_381::{G1Affine, G1Projective};
+        use group::Group;
+        let samples = 1000;
+        let mut rng = thread_rng();
+        for _i in 0..samples {
+            let g1: G1Affine = G1Projective::random(&mut rng).into();
+            assert_eq!(g1, G1Affine::from_bytes(&g1.to_bytes()).unwrap());
+        }
+    }
+
+    #[cfg(feature = "bls12_381")]
+    #[test]
+    fn test_g2affine() {
+        use bls12_381::{G2Affine, G2Projective};
+        use group::Group;
+        let samples = 1000;
+        let mut rng = thread_rng();
+        for _i in 0..samples {
+            let g1: G2Affine = G2Projective::random(&mut rng).into();
+            assert_eq!(g1, G2Affine::from_bytes(&g1.to_bytes()).unwrap());
+        }
+    }
+
+    #[cfg(feature = "bls12_381")]
+    #[test]
+    fn test_scalar() {
+        use bls12_381::Scalar;
+        use ff::Field;
+        let samples = 10000;
+        let mut rng = thread_rng();
+        for _i in 0..samples {
+            let g1: Scalar = Scalar::random(&mut rng);
+            assert_eq!(g1, Scalar::from_bytes(&g1.to_bytes()).unwrap());
+        }
+    }
 }

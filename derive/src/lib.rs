@@ -209,7 +209,12 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
             quote! {
                 impl Binary for #ty_name {
                     fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
-                        match bs[0] {
+                        if bs.len() == 0 {
+                            return None;
+                        }
+                        let b = bs[0];
+                        let bs = &bs[1..];
+                        match b {
                             #(#parse_match_branches)*
                             _ => None
                         }
