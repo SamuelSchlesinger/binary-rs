@@ -1,5 +1,7 @@
 # Binary
 
+![build](https://github.com/SamuelSchlesinger/binary-rs/actions/workflows/rust.yml/badge.svg)
+
 Dead simple binary serialization and deserialization in Rust.
 
 ```rust
