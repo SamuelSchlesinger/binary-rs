@@ -12,7 +12,7 @@ We pack as tightly as we can using a little endian byte ordering.
 ### Collections
 
 We encode the length as a `u64` and then each element according to its type.
-Note that these collections can be of arbitrary size, and you must be careful
+Beware that these collections can be of arbitrary size, and you must be careful
 when they are coming from an untrusted source as they are a ripe denial of
 service attack vector.
 
