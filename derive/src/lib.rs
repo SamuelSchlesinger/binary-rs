@@ -8,7 +8,7 @@ use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Fields, GenericPara
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
-            type_param.bounds.push(parse_quote!(heapsize::HeapSize));
+            type_param.bounds.push(parse_quote!(Binary));
         }
     }
     generics
