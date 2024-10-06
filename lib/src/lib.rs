@@ -51,6 +51,44 @@ pub fn parse_bytes<const N: usize>(bs: &[u8]) -> Option<(&[u8; N], &[u8])> {
     }
 }
 
+impl<A: Binary, B: Binary> Binary for (A, B) {
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (a, bs) = A::parse(bs)?;
+        let (b, bs) = B::parse(bs)?;
+        Some(((a, b), bs))
+    }
+
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        self.0.unparse(bs);
+        self.1.unparse(bs);
+    }
+}
+
+impl<A: Binary, B: Binary, C: Binary> Binary for (A, B, C) {
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (a, bs) = A::parse(bs)?;
+        let (b, bs) = B::parse(bs)?;
+        let (c, bs) = C::parse(bs)?;
+        Some(((a, b, c), bs))
+    }
+
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        self.0.unparse(bs);
+        self.1.unparse(bs);
+        self.2.unparse(bs);
+    }
+}
+
+// TODO implement more tuples via a proc macro
+
+impl Binary for () {
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        Some(((), bs))
+    }
+
+    fn unparse(&self, _bs: &mut Vec<u8>) {}
+}
+
 impl<const LENGTH: usize, A: Binary> Binary for [A; LENGTH] {
     fn parse(mut bs: &[u8]) -> Option<(Self, &[u8])> {
         use std::mem::MaybeUninit;
@@ -691,6 +729,25 @@ mod test {
             assert_eq!(
                 array,
                 <[u64; 1000] as Binary>::from_bytes(&array.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_tuple() {
+        let mut rng = thread_rng();
+        let samples = 10000;
+        for _i in 0..samples {
+            let t: (u128, char) = (Standard.sample(&mut rng), Standard.sample(&mut rng));
+            assert_eq!(
+                t,
+                <(u128, char) as Binary>::from_bytes(&t.to_bytes()).unwrap()
+            );
+            let x: i128 = Standard.sample(&mut rng);
+            let t = (t.0, t.1, x);
+            assert_eq!(
+                t,
+                <(u128, char, i128) as Binary>::from_bytes(&t.to_bytes()).unwrap()
             );
         }
     }
