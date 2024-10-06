@@ -470,6 +470,9 @@ mod test {
         thread_rng,
     };
 
+    #[cfg(feature = "bls12_381")]
+    use bls12_381::Scalar;
+
     fn test_serialization<T>(samples: usize)
     where
         Standard: Distribution<T>,
@@ -648,13 +651,35 @@ mod test {
         }
     }
 
-    // TODO VecDeque
-
     #[derive(derive::Binary, Debug, PartialEq)]
     struct Example {
         a: u128,
         b: i64,
         c: f32,
+    }
+
+    #[cfg(feature = "bls12_381")]
+    #[derive(derive::Binary, Debug, PartialEq)]
+    struct Nested {
+        m: BTreeMap<u64, Scalar>,
+    }
+
+    #[cfg(feature = "bls12_381")]
+    #[test]
+    fn test_nested() {
+        use ff::Field;
+        let mut rng = thread_rng();
+        let samples = 100;
+        for _i in 0..samples {
+            let mut m = BTreeMap::new();
+            for _j in 0..100 {
+                let n: u64 = Standard.sample(&mut rng);
+                let n = n % 100;
+                m.insert(n, Scalar::random(&mut rng));
+            }
+            let n = Nested { m };
+            assert_eq!(n, Nested::from_bytes(&n.to_bytes()).unwrap());
+        }
     }
 
     #[test]

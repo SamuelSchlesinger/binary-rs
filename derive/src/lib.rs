@@ -13,10 +13,10 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
             match s.fields {
                 Fields::Named(fields) => {
                     let parse_code = fields.named.iter().map(|field| {
-                        let field_ident = &field.ident;
+                        let field_ident = &field.ident.as_ref().unwrap();
                         let field_ty = &field.ty;
                         quote! {
-                            let (#field_ident, bs) = #field_ty::parse(bs)?;
+                            let (#field_ident, bs) = <#field_ty as Binary>::parse(bs)?;
                         }
                     });
                     let field_names = fields
@@ -57,7 +57,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                         |(field, field_ident)| {
                             let field_ty = &field.ty;
                             quote! {
-                                let (#field_ident, bs) = #field_ty::parse(bs)?;
+                                let (#field_ident, bs) = <#field_ty as Binary>::parse(bs)?;
                             }
                         },
                     );
@@ -106,7 +106,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                             let field_ident = &field.ident;
                             let field_ty = &field.ty;
                             quote! {
-                                let (#field_ident, bs) = #field_ty::parse(bs)?;
+                                let (#field_ident, bs) = <#field_ty as Binary>::parse(bs)?;
                             }
                         });
                         let field_names = fields
@@ -133,7 +133,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                             |(field, field_ident)| {
                                 let field_ty = &field.ty;
                                 quote! {
-                                    let (#field_ident, bs) = #field_ty::parse(bs)?;
+                                    let (#field_ident, bs) = <#field_ty as Binary>::parse(bs)?;
                                 }
                             },
                         );
