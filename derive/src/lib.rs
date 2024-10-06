@@ -4,7 +4,7 @@ use proc_macro2::{Ident, Span};
 use quote::quote;
 use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Fields, GenericParam, Generics};
 
-// Add a bound `T: HeapSize` to every type parameter T.
+// Add a bound `T: Binary` to every type parameter T.
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
