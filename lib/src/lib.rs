@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedL
 /// To derive on structs automatically.
 #[cfg(feature = "derive")]
 pub mod derive {
-    /// A derive macro which currently works on structs and unit types. It would be a really good idea to improve
-    /// it to work on enums as well.
+    /// A derive macro which should work for most situations. Please file an issue if it isn't working for
+    /// you explaining why.
     pub use binary_derive::Binary;
 }
 
