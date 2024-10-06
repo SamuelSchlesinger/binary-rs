@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque};
 
-/// To derive on structs automatically.
+/// Contains the Binary macro for deriving the Binary trait.
 #[cfg(feature = "derive")]
 pub mod derive {
     /// A derive macro which should work for most situations. Please file an issue if it isn't working for
