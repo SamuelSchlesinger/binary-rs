@@ -2,6 +2,8 @@
 //!
 //! A simple binary encoding and decoding library.
 
+#![feature(maybe_uninit_array_assume_init)]
+
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque};
 
 /// To derive on structs automatically.
@@ -46,6 +48,28 @@ pub fn parse_bytes<const N: usize>(bs: &[u8]) -> Option<(&[u8; N], &[u8])> {
         ))
     } else {
         None
+    }
+}
+
+impl<const LENGTH: usize, A: Binary> Binary for [A; LENGTH] {
+    fn parse(mut bs: &[u8]) -> Option<(Self, &[u8])> {
+        use std::mem::MaybeUninit;
+        let mut marray: [MaybeUninit<A>; LENGTH] = unsafe { MaybeUninit::uninit().assume_init() };
+        for i in 0..LENGTH {
+            let (x, bs_prime) = A::parse(bs)?;
+            marray[i] = MaybeUninit::new(x);
+            bs = bs_prime;
+        }
+
+        let array = unsafe { MaybeUninit::array_assume_init::<LENGTH>(marray) };
+
+        Some((array, bs))
+    }
+
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        for i in 0..LENGTH {
+            self[i].unparse(bs);
+        }
     }
 }
 
@@ -647,6 +671,26 @@ mod test {
             assert_eq!(
                 v,
                 <VecDeque<i32> as Binary>::from_bytes(&v.to_bytes()).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_array() {
+        use std::mem::MaybeUninit;
+        let mut rng = thread_rng();
+        let samples = 1000;
+        for _i in 0..samples {
+            let array = {
+                let mut marray: [MaybeUninit<u64>; 1000] = [MaybeUninit::uninit(); 1000];
+                for i in 0..1000 {
+                    marray[i] = MaybeUninit::new(Standard.sample(&mut rng));
+                }
+                unsafe { MaybeUninit::array_assume_init(marray) }
+            };
+            assert_eq!(
+                array,
+                <[u64; 1000] as Binary>::from_bytes(&array.to_bytes()).unwrap()
             );
         }
     }

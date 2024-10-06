@@ -2,12 +2,24 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Fields, GenericParam, Generics};
+
+// Add a bound `T: HeapSize` to every type parameter T.
+fn add_trait_bounds(mut generics: Generics) -> Generics {
+    for param in &mut generics.params {
+        if let GenericParam::Type(ref mut type_param) = *param {
+            type_param.bounds.push(parse_quote!(heapsize::HeapSize));
+        }
+    }
+    generics
+}
 
 #[proc_macro_derive(Binary)]
 pub fn derive_binary(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as DeriveInput);
     let ty_name = &input.ident;
+    let generics = add_trait_bounds(input.generics);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     match input.data {
         Data::Struct(s) => {
             match s.fields {
@@ -31,7 +43,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                         }
                     });
                     quote! {
-                        impl Binary for #ty_name {
+                        impl #impl_generics Binary for #ty_name #ty_generics #where_clause {
                             fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
                                 #(#parse_code);*
                                 Some((#ty_name { #(#field_names),* }, bs))
@@ -67,7 +79,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                         }
                     });
                     quote! {
-                        impl Binary for #ty_name {
+                        impl #impl_generics Binary for #ty_name #ty_generics #where_clause {
                             fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
                                 #(#parse_code);*
                                 Some((#ty_name ( #(#field_idents),* ), bs))
@@ -82,7 +94,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                     .into()
                 }
                 Fields::Unit => quote! {
-                    impl Binary for #ty_name {
+                    impl #impl_generics Binary for #ty_name #ty_generics #where_clause {
                         fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
                             return Some((#ty_name, bs));
                         }
@@ -207,7 +219,7 @@ pub fn derive_binary(tokens: TokenStream) -> TokenStream {
                 }
             });
             quote! {
-                impl Binary for #ty_name {
+                impl #impl_generics Binary for #ty_name #ty_generics #where_clause {
                     fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
                         if bs.len() == 0 {
                             return None;
