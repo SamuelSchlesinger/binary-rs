@@ -5,18 +5,18 @@
 Dead simple binary serialization and deserialization in Rust.
 
 ```rust
-use binary::{derive, Binary};
+use binary::{derive::Binary, Binary};
 
-#[derive(derive::Binary)]
+#[derive(Binary)]
 struct X { y: u32, z: f64 }
 
-#[derive(derive::Binary)]
+#[derive(Binary)]
 struct Y(i128);
 
-#[derive(derive::Binary)]
+#[derive(Binary)]
 struct Z;
 
-#[derive(derive::Binary)]
+#[derive(Binary)]
 enum K {
   A { a1: u32, a2: bool },
   B(char, i16),
