@@ -519,6 +519,33 @@ impl Binary for G2Projective {
     }
 }
 
+#[cfg(feature = "curve25519-dalek")]
+use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
+
+#[cfg(feature = "curve25519-dalek")]
+impl Binary for CompressedRistretto {
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (compressed_bytes, bs) = <[u8; 32] as Binary>::parse(bs)?;
+        Some((CompressedRistretto::from_slice(&compressed_bytes).ok()?, bs))
+    }
+
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        self.as_bytes().unparse(bs);
+    }
+}
+
+#[cfg(feature = "curve25519-dalek")]
+impl Binary for RistrettoPoint {
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (cr, bs) = CompressedRistretto::parse(bs)?;
+        Some((CompressedRistretto::decompress(&cr)?, bs))
+    }
+
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        self.compress().unparse(bs);
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{derive, parse_bytes, Binary};
@@ -890,6 +917,20 @@ mod test {
         for _i in 0..samples {
             let g1: Scalar = Scalar::random(&mut rng);
             assert_eq!(g1, Scalar::from_bytes(&g1.to_bytes()).unwrap());
+        }
+    }
+
+    #[cfg(feature = "curve25519-dalek")]
+    #[test]
+    fn test_ristretto() {
+        use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
+        let samples = 10000;
+        let mut rng = thread_rng();
+        for _i in 0..samples {
+            let r = RistrettoPoint::random(&mut rng);
+            assert_eq!(r, RistrettoPoint::from_bytes(&r.to_bytes()).unwrap());
+            let cr = r.compress();
+            assert_eq!(cr, CompressedRistretto::from_bytes(&cr.to_bytes()).unwrap());
         }
     }
 }
