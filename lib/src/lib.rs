@@ -520,7 +520,10 @@ impl Binary for G2Projective {
 }
 
 #[cfg(feature = "curve25519-dalek")]
-use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
+use curve25519_dalek::{
+    ristretto::{CompressedRistretto, RistrettoPoint},
+    scalar::Scalar as RistrettoScalar,
+};
 
 #[cfg(feature = "curve25519-dalek")]
 impl Binary for CompressedRistretto {
@@ -543,6 +546,21 @@ impl Binary for RistrettoPoint {
 
     fn unparse(&self, bs: &mut Vec<u8>) {
         self.compress().unparse(bs);
+    }
+}
+
+#[cfg(feature = "curve25519-dalek")]
+impl Binary for RistrettoScalar {
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (scalar_bytes, bs) = <[u8; 32] as Binary>::parse(bs)?;
+        Some((
+            Option::from(RistrettoScalar::from_canonical_bytes(scalar_bytes))?,
+            bs,
+        ))
+    }
+
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        self.as_bytes().unparse(bs);
     }
 }
 
@@ -931,6 +949,18 @@ mod test {
             assert_eq!(r, RistrettoPoint::from_bytes(&r.to_bytes()).unwrap());
             let cr = r.compress();
             assert_eq!(cr, CompressedRistretto::from_bytes(&cr.to_bytes()).unwrap());
+        }
+    }
+
+    #[cfg(feature = "curve25519-dalek")]
+    #[test]
+    fn test_ristretto_scalar() {
+        use curve25519_dalek::scalar::Scalar as RistrettoScalar;
+        let samples = 10000;
+        let mut rng = thread_rng();
+        for _i in 0..samples {
+            let r = RistrettoScalar::random(&mut rng);
+            assert_eq!(r, RistrettoScalar::from_bytes(&r.to_bytes()).unwrap());
         }
     }
 }
