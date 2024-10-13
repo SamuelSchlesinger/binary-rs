@@ -564,6 +564,18 @@ impl Binary for RistrettoScalar {
     }
 }
 
+#[cfg(feature = "blake3")]
+impl Binary for blake3::Hash {
+    fn parse(bs: &[u8]) -> Option<(Self, &[u8])> {
+        let (hash_bytes, bs) = <[u8; 32] as Binary>::parse(bs)?;
+        Some((blake3::Hash::from_bytes(hash_bytes), bs))
+    }
+
+    fn unparse(&self, bs: &mut Vec<u8>) {
+        self.as_bytes().unparse(bs);
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{derive, parse_bytes, Binary};
@@ -961,6 +973,23 @@ mod test {
         for _i in 0..samples {
             let r = RistrettoScalar::random(&mut rng);
             assert_eq!(r, RistrettoScalar::from_bytes(&r.to_bytes()).unwrap());
+        }
+    }
+
+    #[cfg(feature = "blake3")]
+    #[test]
+    fn test_hash() {
+        use rand::Fill;
+        let samples = 10000;
+        let mut rng = thread_rng();
+        let mut bytes = [0u8; 100];
+        for _i in 0..samples {
+            bytes.try_fill(&mut rng).unwrap();
+            let r = blake3::hash(&bytes);
+            assert_eq!(
+                r,
+                <blake3::Hash as Binary>::from_bytes(&r.to_bytes()).unwrap()
+            );
         }
     }
 }
